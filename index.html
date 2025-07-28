@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pharma Supply Chain Sustainability Engagement</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        /* Simple animation for modals */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+        /* Custom pulse for info buttons */
+        @keyframes pulse-red {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+        }
+        .animate-pulse-red {
+            animation: pulse-red 2s infinite;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, Fragment, useRef, useEffect } = React;
+
+        // --- MOCK ICONS (Replacing lucide-react for this preview) ---
+        const Icons = {
+            FlaskConical: '🧪', Leaf: '🌿', Factory: '🏭', Truck: '🚚', Package: '📦', Cloud: '☁️', AlertTriangle: '⚠️', Shield: '🛡️', Zap: '⚡', Workflow: '⚙️', Layers: '📚', GitFork: '🔀', Building2: '🏢', Scale: '⚖️', Brain: '🧠', Wifi: '📶', Lock: '🔒', Recycle: '♻️', Droplets: '💧', Flame: '🔥', TreePine: '🌲', DollarSign: '💲', Globe: '🌍', Briefcase: '💼', Pill: '💊', Trash2: '🗑️', Blend: '🌀', Globe2: '🌐', Link: '🔗', XCircle: '⭕', RefreshCcw: '🔄', Sprout: '🌱', Store: '🏪', Atom: '⚛️', PackagePlus: '📦➕', ArrowRightCircle: '➡️', Handshake: '🤝', Target: '🎯', Telescope: '🔭', ExternalLink: '🔗', User: '👤', Dna: '🧬', Map: '🗺️', ChevronDown: '▼', ChevronUp: '▲', TestTube: '🧪', Users: '👥', FileText: '📄', ClipboardCheck: '📋✅', X: '❌', LandPlot: '🏞️', Combine: '🚜', Beaker: '⚗️', PackageCheck: '📦✔️', Info: 'ℹ️', FileSignature: '✍️', TrendingUp: '📈', Ship: '🚢', ShieldCheck: '🛡️✅', OilRig: '🛢️', Gate: '🚪', Percent: '💯', PiggyBank: '🐖', BarChart: '📊', Warning: '☢️', Eye: '👁️'
+        };
+
+        // --- MODAL COMPONENTS ---
+
+        const SublayerModal = ({ onClose, title, subStages }) => (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4 animate-fade-in">
+                <div className="bg-white rounded-xl shadow-2xl p-8 max-w-5xl w-full relative">
+                    <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-800"><span className="text-2xl">{Icons.X}</span></button>
+                    <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">{title}</h2>
+                    <div className="flex flex-col md:flex-row items-stretch justify-between space-y-4 md:space-y-0 md:space-x-4">
+                        {subStages.map((stage, index) => (
+                            <Fragment key={stage.name}>
+                                <div className="flex flex-col items-center text-center w-full md:w-1/6 p-2 rounded-lg bg-gray-50">
+                                    <div className="p-3 text-4xl bg-indigo-100 rounded-full mb-2 text-indigo-600">{stage.icon}</div>
+                                    <h3 className="font-bold text-sm mb-2">{stage.name}</h3>
+                                    {stage.companies && <p className="text-xs text-indigo-700 font-semibold mb-2">{stage.companies}</p>}
+                                    <p className="text-xs text-gray-600 mb-2">{stage.description}</p>
+                                    {stage.flow && <p className="text-xs text-gray-500 italic">"{stage.flow}"</p>}
+                                </div>
+                                {index < subStages.length - 1 && (
+                                    <div className="text-gray-300 hidden md:flex items-center text-4xl">{Icons.ArrowRightCircle}</div>
+                                )}
+                            </Fragment>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        );
+
+        const OverlapModal = ({ onClose, data }) => {
+            if (!data) return null;
+            return (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4 animate-fade-in">
+                    <div className="bg-white rounded-xl shadow-2xl p-8 max-w-3xl w-full relative">
+                        <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-800"><span className="text-2xl">{Icons.X}</span></button>
+                        <h2 className="text-2xl font-bold text-gray-800 mb-2">{data.title}</h2>
+                        <p className="text-sm text-gray-600 mb-6">{data.summary}</p>
+                        
+                        <div className="space-y-4">
+                            <div>
+                                <h3 className="font-semibold text-red-700 mb-2 flex items-center"><span className="mr-2">{Icons.PiggyBank}</span>Cost Drivers</h3>
+                                <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">{data.costDrivers.map((item, i) => <li key={i}>{item}</li>)}</ul>
+                            </div>
+                            <div>
+                                <h3 className="font-semibold text-green-700 mb-2 flex items-center"><span className="mr-2">{Icons.BarChart}</span>Profit & Value Levers</h3>
+                                <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">{data.profitLevers.map((item, i) => <li key={i}>{item}</li>)}</ul>
+                            </div>
+                            <div>
+                                <h3 className="font-semibold text-yellow-700 mb-2 flex items-center"><span className="mr-2">{Icons.Warning}</span>Risk & Exposure</h3>
+                                <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">{data.riskExposure.map((item, i) => <li key={i}>{item}</li>)}</ul>
+                            </div>
+                            <div className="pt-4 border-t">
+                                <h3 className="font-semibold text-gray-800 mb-2 flex items-center"><span className="mr-2">{Icons.Eye}</span>C-Suite View</h3>
+                                <p className="text-sm text-gray-700 italic">{data.executiveView}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const SustainabilityModal = ({ onClose, data }) => {
+            if (!data) return null;
+            return (
+                <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50 p-4 animate-fade-in">
+                    <div className="bg-white rounded-xl shadow-2xl p-8 max-w-3xl w-full relative">
+                        <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-800"><span className="text-2xl">{Icons.X}</span></button>
+                        <div className="flex items-center mb-4">
+                            <div className="p-3 text-4xl bg-teal-100 rounded-full mr-4 text-teal-600">{Icons.Handshake}</div>
+                            <div>
+                                <h2 className="text-2xl font-bold text-gray-800">Sustainability Engagement Venture</h2>
+                                <p className="text-md text-gray-500">{data.goal}</p>
+                            </div>
+                        </div>
+                        <div className="mt-6 space-y-5 text-sm">
+                            <div><h3 className="font-semibold text-teal-800 mb-2 flex items-center"><span className="mr-2">{Icons.Target}</span>Venture Model</h3><p className="text-gray-700 leading-relaxed">{data.ventureModel}</p></div>
+                            <div><h3 className="font-semibold text-teal-800 mb-2 flex items-center"><span className="mr-2">{Icons.Zap}</span>WWF Value Proposition</h3><p className="text-gray-700 leading-relaxed">{data.wwfValue}</p></div>
+                            <div><h3 className="font-semibold text-teal-800 mb-2 flex items-center"><span className="mr-2">{Icons.TrendingUp}</span>Strategic & Business Drivers</h3><p className="text-gray-700 leading-relaxed">{data.businessDrivers}</p></div>
+                            {data.realWorldExample && (
+                                <div className="pt-4 border-t border-gray-200">
+                                    <h3 className="font-semibold text-gray-600 mb-2 flex items-center"><span className="mr-2">{Icons.ShieldCheck}</span>Real-World Precedent</h3>
+                                    <p className="text-gray-600 italic leading-relaxed">{data.realWorldExample}</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+        
+        const DelineationControlPanel = ({ data, activeDelineation, setActiveDelineation, onClose }) => {
+            const activeData = data[activeDelineation];
+            return (
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl z-20 bg-white/80 backdrop-blur-sm rounded-b-lg shadow-lg p-4 animate-fade-in">
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <h3 className="font-bold text-lg text-rose-800">Delineation Analysis</h3>
+                            <div className="flex flex-wrap gap-2 mt-2">
+                                {Object.entries(data).map(([key, { label }]) => (
+                                    <button 
+                                        key={key}
+                                        onClick={() => setActiveDelineation(key)}
+                                        className={`px-3 py-1 text-xs font-semibold rounded-full transition-colors ${activeDelineation === key ? 'bg-rose-600 text-white' : 'bg-rose-100 text-rose-800 hover:bg-rose-200'}`}
+                                    >
+                                        {label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                        <button onClick={onClose} className="text-gray-500 hover:text-gray-800"><span className="text-2xl">{Icons.X}</span></button>
+                    </div>
+                    {activeData && (
+                        <div className="mt-4 pt-4 border-t border-rose-200 text-sm">
+                            <p className="text-gray-700">{activeData.description}</p>
+                            <p className="text-xs mt-2 text-gray-800"><b>Exec View:</b> {activeData.executiveView}</p>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+
+        // --- MAIN APP COMPONENT ---
+        const App = () => {
+            const [showEnvironmentalLayer, setShowEnvironmentalLayer] = useState(false);
+            const [showStructureLayer, setShowStructureLayer] = useState(false);
+            const [showRegulatoryDigitalLayer, setShowRegulatoryDigitalLayer] = useState(false);
+            const [showComminglingLayer, setShowComminglingLayer] = useState(false);
+            const [showSustainabilityLayer, setShowSustainabilityLayer] = useState(false);
+            const [showHorizonLayer, setShowHorizonLayer] = useState(false);
+            const [activeFlow, setActiveFlow] = useState('none');
+            const [showMethodology, setShowMethodology] = useState(false);
+            const [activeSublayer, setActiveSublayer] = useState(null);
+            const [showOverlaps, setShowOverlaps] = useState(false);
+            const [activeOverlap, setActiveOverlap] = useState(null);
+            const [activeSustainability, setActiveSustainability] = useState(null);
+            const [showMarketAccessLayer, setShowMarketAccessLayer] = useState(false);
+            const [delineationModeActive, setDelineationModeActive] = useState(false);
+            const [activeDelineation, setActiveDelineation] = useState('solvent');
+
+            const stageRefs = useRef([]);
+            const [delineationPath, setDelineationPath] = useState(null);
+
+
+            // --- DATA OBJECTS ---
+            const stages = [
+                { id: 'rd', name: 'R&D', icon: Icons.FlaskConical, actors: ['Pharma Co.', 'CROs', 'Academia'] },
+                { id: 'resourceExtraction', name: 'Resource Extraction & Primary Processing', icon: Icons.Sprout, actors: ['Farmers', 'Miners', 'Oil & Gas Majors', 'Primary Processors'] },
+                { id: 'commodityTrading', name: 'Commodity Trading & Aggregation', icon: Icons.Store, actors: ['Traders (e.g. Glencore)', 'Brokers', 'Aggregators'] },
+                { id: 'specializedProcessing', name: 'Specialized Material Processing', icon: Icons.Atom, actors: ['Specialty Chemical Mfrs', 'Refineries (e.g. Dow, BASF)'] },
+                { id: 'apiExcipientMfg', name: 'API/Excipient Manufacturing', icon: Icons.Factory, actors: ['CDMOS/CMOS', 'In-house Mfg'] },
+                { id: 'drugProductMfg', name: 'Drug Product Manufacturing', icon: Icons.PackagePlus, actors: ['Branded Pharma', 'Generics'] },
+                { id: 'distribution', name: 'Distribution & Logistics', icon: Icons.Truck, actors: ['Wholesalers (e.g. McKesson)', '3PLs', 'GPOs', 'PBMs'] },
+                { id: 'endoflife', name: 'Dispensing & End-of-Useful-Life', icon: Icons.Package, actors: ['Pharmacies', 'Hospitals', 'Patients', 'PBMs', 'GPOs'] },
+            ];
+            
+            const sublayerData = {
+                rd: { title: 'The R&D Cycle: From Discovery to Approval', subStages: [ { name: 'Target ID & Validation', icon: Icons.Target, companies: 'Genomics Cos, AI Platforms', description: 'Identifying biological targets implicated in disease.', flow: 'Hypothesis → Validated Target' }, { name: 'Lead Discovery & Optimization', icon: Icons.FlaskConical, companies: 'CROS, Biotech', description: 'Screening and modifying compounds into promising "leads".', flow: 'Target → Lead Compound' }, { name: 'Preclinical Research', icon: Icons.TestTube, companies: 'CROS, Academia', description: 'Testing lead compounds in vitro and in vivo for safety and efficacy.', flow: 'Lead → Preclinical Candidate' }, { name: 'IND Submission', icon: Icons.FileText, companies: 'Regulatory Consultants', description: 'Filing an Investigational New Drug application with regulators.', flow: 'Candidate → Clinical Permission' }, { name: 'Clinical Trials', icon: Icons.Users, companies: 'CROS, Hospitals', description: 'Multi-phase human studies for safety and efficacy.', flow: 'Permission → Human Data' }, { name: 'NDA/BLA Submission', icon: Icons.ClipboardCheck, companies: 'Pharma Co.', description: 'Submitting all data for marketing approval.', flow: 'Data → Marketed Drug' }, ] },
+                resourceExtraction: { title: 'Upstream Flow: From Nature to Raw Material', subStages: [ { name: 'Exploration / Cultivation', icon: Icons.LandPlot, description: 'Identifying mineral deposits, exploring for oil & gas, or cultivating agricultural feedstocks.' }, { name: 'Extraction / Harvesting', icon: Icons.Combine, description: 'Mining ores, extracting crude oil/gas, or harvesting crops.' }, { name: 'Primary Processing', icon: Icons.Beaker, description: 'Initial purification, such as creating crude palm oil (CPO), concentrating mineral ores, or separating crude oil into fractions.' }, { name: 'Transport to Trader', icon: Icons.Truck, description: 'Moving bulk raw materials (e.g. crude oil, CPO) to aggregation points for entry into global commodity markets.' }, ] },
+                commodityTrading: { title: 'The Commodity Market: A Pharma Perspective', subStages: [ { name: 'Hedging & Futures', icon: Icons.TrendingUp, description: 'Pharma buyers hedge against price volatility for key starting materials, including petrochemical feedstocks (e.g., naphtha) and bio-based oils.' }, { name: 'Specialized Brokers', icon: Icons.Handshake, description: 'Brokers focus on quality assurance, securing batches with specific purity levels and providing documentation (e.g., Certificates of Analysis) essential for GMP.' }, { name: 'Aggregation & Quality Testing', icon: Icons.TestTube, description: 'Aggregators combine smaller lots but must maintain batch traceability and perform quality testing to ensure materials meet stringent pharmaceutical standards.' }, { name: 'Logistics & Customs', icon: Icons.Ship, description: 'Managing international freight, import/export documentation, and customs clearance for chemical precursors, which often face high scrutiny.' }, ] },
+                specializedProcessing: { title: 'Midstream Flow: From Raw Material to Intermediate', subStages: [ { name: 'Bulk Material Refining', icon: Icons.Factory, description: 'Large-scale refining of commodity materials (e.g., crude oil into petrochemicals like ethylene and benzene; CPO into refined oils).' }, { name: 'Intermediate Synthesis', icon: Icons.Atom, description: 'Converting refined materials into key chemical building blocks (e.g., oleochemicals, bulk petrochemicals like propylene glycol).' }, { name: 'Purification & Specialization', icon: Icons.Beaker, description: 'Advanced purification to create higher-grade specialty chemicals or excipient precursors from petrochemical or biological sources.' }, { name: 'Quality Control & Packaging', icon: Icons.PackageCheck, description: 'Testing for purity and specifications, then packaging for sale to API/Excipient manufacturers.' }, ] }
+            };
+
+            const overlapData = {
+                'commodityTrading-specializedProcessing': { 
+                    title: 'From Commodity to Chemical Feedstock',
+                    summary: 'This is the critical procurement interface where undifferentiated global commodities are converted into specified inputs for chemical synthesis. Decisions here are dominated by managing price volatility and securing consistent quality.',
+                    costDrivers: ['Global commodity price fluctuations (e.g., price of crude oil, palm oil).', 'Freight, insurance, and tariff costs for international shipping.', 'Premiums for specific quality grades or certifications.', 'Hedging costs to lock in future prices.'],
+                    profitLevers: ['Long-term supply contracts with favorable pricing terms.', 'Strategic sourcing from regions with lower logistical costs or trade barriers.', 'Optimizing inventory to buffer against price shocks without incurring excessive carrying costs.', 'Investing in supplier relationships to become a "customer of choice".'],
+                    riskExposure: ['**Supply Disruption:** Geopolitical events (e.g., conflict in the Middle East, Panama Canal drought) can instantly impact shipping routes and availability.', '**Price Volatility:** Financial markets, weather events, and OPEC decisions create massive price uncertainty.', '**Quality & Traceability Loss:** Commingling at the commodity level makes tracing materials back to a single origin nearly impossible, creating ESG and quality risks.'],
+                    executiveView: 'The CFO is focused on hedging strategies and managing commodity price exposure. The COO and Head of Supply Chain are concerned with security of supply, supplier diversification, and the landed cost of goods. This is about de-risking the primary input stream.'
+                },
+                'apiExcipientMfg-drugProductMfg': {
+                    title: 'From Ingredient to Formulation',
+                    summary: 'This interface represents the handoff of the most critical, high-value ingredients (APIs and key excipients) to the drug product manufacturer. The entire focus shifts from cost management to quality assurance, regulatory compliance, and mitigating single-source dependency.',
+                    costDrivers: ['Cost of GMP (Good Manufacturing Practices) compliance and regulatory filings.', 'High cost of quality control, batch testing, and release.', 'Specialized logistics, including cold chain for biologics and high-security transport for controlled substances.', 'Premiums for ingredients from highly reputable, audit-proven suppliers.'],
+                    profitLevers: ['Establishing strategic partnerships with key CDMOs/suppliers for better terms and capacity reservation.', 'Dual or multi-sourcing strategies for critical APIs to increase negotiating leverage and reduce risk.', 'Investing in supplier quality management to reduce the likelihood of costly batch failures.'],
+                    riskExposure: ['**Single-Source Risk:** Over-reliance on one supplier for a critical API is a massive vulnerability that can halt production of a blockbuster drug.', '**Regulatory Risk:** An FDA/EMA warning letter issued to a key supplier can disrupt the entire supply chain.', '**IP Risk:** Ensuring protection of intellectual property when working with external manufacturing partners.', '**Logistical Failure:** A failure in the cold chain or a customs delay can result in the loss of millions of dollars worth of product.'],
+                    executiveView: 'The COO is obsessed with supply continuity and mitigating single-source risk. The Head of Quality sees this as the most critical control point. The CFO views this as a high-cost, low-flexibility part of the COGS that must be secured at all costs. The focus is on quality and security over pure cost optimization.'
+                }
+            };
+
+            const environmentalData = {
+                rd: { hotspot: 'low', hazardIdentification: [{ name: 'Bioprospecting & Sample Collection', icon: Icons.Leaf }, { name: 'Lab-scale Chemical Waste (incl. petrochemical solvents)', icon: Icons.Beaker }, { name: 'Single-use Lab Plastics', icon: Icons.Recycle }], exposureAssessment: [{ name: 'Potential Ecosystem Disturbance', icon: Icons.Map }, { name: 'Social/Community Impacts (Benefit Sharing)', icon: Icons.Users }, { name: 'Controlled Hazardous Waste Streams', icon: Icons.Trash2 }], riskCharacterization: 'Low risk of direct environmental release from labs. The primary risks are upstream: potential for ecosystem damage and social conflict during sample collection if not ethically managed. R&D decisions also have high downstream impact by locking in petrochemical-based vs. greener manufacturing processes.' },
+                resourceExtraction: { hotspot: 'red', hazardIdentification: [{ name: 'Pesticides/Herbicides (Ag)', icon: Icons.Leaf }, { name: 'Mining Tailings', icon: Icons.AlertTriangle }, { name: 'GHG Emissions (Flaring, Land Use)', icon: Icons.Cloud }, { name: 'Oil Spills & Leaks', icon: Icons.Droplets }], exposureAssessment: [{ name: 'Water Runoff/Contamination', icon: Icons.Droplets }, { name: 'Air Emissions (VOCs, Methane)', icon: Icons.Cloud }, { name: 'Soil Contamination', icon: Icons.Globe }], riskCharacterization: 'High risk of ecosystem damage, biodiversity loss, water contamination, and significant GHG emissions from both agriculture and fossil fuel extraction.' },
+                commodityTrading: { hotspot: 'yellow', hazardIdentification: [{ name: 'Fumigants/Preservatives', icon: Icons.Shield }, { name: 'GHG Emissions (Shipping)', icon: Icons.Truck }], exposureAssessment: [{ name: 'Air Emissions', icon: Icons.Cloud }, { name: 'Accidental Spills (Maritime)', icon: Icons.Droplets }], riskCharacterization: 'Moderate risk from global transportation emissions (especially maritime shipping of crude oil and chemicals) and energy for storage.' },
+                specializedProcessing: { hotspot: 'red', hazardIdentification: [{ name: 'VOCs from petrochemicals', icon: Icons.Cloud }, { name: 'Hazardous Solvents', icon: Icons.Flame }, { name: 'Chemical Byproducts & Waste', icon: Icons.Atom }], exposureAssessment: [{ name: 'Air Emissions', icon: Icons.Cloud }, { name: 'Wastewater Discharge', icon: Icons.Droplets }, { name: 'Hazardous Waste', icon: Icons.Trash2 }], riskCharacterization: 'High risk of air and water pollution from energy-intensive chemical reactions. Petrochemical refining is a major source of industrial emissions.' },
+                apiExcipientMfg: { hotspot: 'red', hazardIdentification: [{ name: 'APIs in effluent', icon: Icons.Pill }, { name: 'Heavy Metal Catalysts', icon: Icons.AlertTriangle }, { name: 'Complex Petrochemical Solvents', icon: Icons.Flame }], exposureAssessment: [{ name: 'Wastewater Discharge (APIs)', icon: Icons.Droplets }, { name: 'Air Emissions (VOCs)', icon: Icons.Cloud }, { name: 'Solid Hazardous Waste', icon: Icons.Trash2 }], riskCharacterization: 'High risk of aquatic ecotoxicity from API discharge. Many processes are solvent and energy-intensive.' },
+                drugProductMfg: { hotspot: 'orange', hazardIdentification: [{ name: 'Single-Use Plastics (often petrochemical-based)', icon: Icons.Recycle }, { name: 'Cleaning Agents', icon: Icons.Droplets }, { name: 'GHG Emissions (HVAC)', icon: Icons.Cloud }], exposureAssessment: [{ name: 'Landfill Waste', icon: Icons.Trash2 }, { name: 'Wastewater Discharge', icon: Icons.Droplets }, { name: 'Air Emissions', icon: Icons.Cloud }], riskCharacterization: 'Moderate-high risk from high energy use and plastic waste from packaging and single-use systems.' },
+                distribution: { hotspot: 'yellow', hazardIdentification: [{ name: 'GHG Emissions (Transportation)', icon: Icons.Truck }, { name: 'Refrigerants', icon: Icons.Zap }], exposureAssessment: [{ name: 'Air Emissions', icon: Icons.Cloud }], riskCharacterization: 'Moderate risk dominated by transportation emissions, including cold chain for biologics.' },
+                endoflife: { hotspot: 'red', hazardIdentification: [{ name: 'Excreted APIs', icon: Icons.User }, { name: 'Improperly Disposed Meds', icon: Icons.Trash2 }, { name: 'Consumer Packaging Waste', icon: Icons.Package }], exposureAssessment: [{ name: 'Wastewater Systems (PiE)', icon: Icons.Droplets }, { name: 'Landfill/Waterways', icon: Icons.Globe }], riskCharacterization: 'High risk of pharmaceutical pollution in the environment (PiE) and plastic pollution from packaging.' },
+            };
+            
+            const structureData = {
+                rd: { corporate: [{ name: 'In-Licensing Agreements', icon: Icons.FileSignature, text: 'Big Pharma often licenses promising molecules from smaller biotechs after early-stage success, obscuring the original R&D source.' }] },
+                commodityTrading: { corporate: [{ name: 'Opaque Intermediaries', icon: Icons.Building2, text: 'Role of trading houses (e.g., Glencore, Vitol) can obscure the link between upstream extraction (oil fields, plantations) and downstream users.' }], gaps: [{ name: 'Foreign API Dependence', icon: Icons.Cloud, text: 'Over 80% of API manufacturing facilities are outside the US, creating vulnerabilities.', link: '#' }] },
+                specializedProcessing: { corporate: [{ name: 'Strategic Equity Investments', icon: Icons.TrendingUp, text: 'Large chemical companies take minority stakes in innovative material science startups, gaining access to tech while obscuring control.' }], gaps: [{ name: 'Petrochemical Feedstock Opacity', icon: Icons.Map, text: 'Lack of transparency into the geographic origin of crude oil and other petrochemical feedstocks for KSMs.', link: '#' }] },
+                apiExcipientMfg: { corporate: [{ name: 'Manufacturing Joint Ventures', icon: Icons.Users, text: 'A pharma company and a CDMO may form a JV to operate a specific plant, blurring the lines of operational control and accountability.' }, { name: 'CDMO/CMO Reliance & Consolidation', icon: Icons.Handshake, text: 'High reliance on a consolidating CDMO market for specialized manufacturing capabilities.' }], gaps: [{ name: 'Single-Source Dependencies', icon: Icons.AlertTriangle, text: 'Many drugs rely on a single API manufacturing facility, posing significant shortage risks.', link: '#' }] },
+            };
+
+            const regulatoryDigitalData = {
+                rd: { regulatory: [{ name: 'Nagoya Protocol', icon: Icons.Globe, link: '#' }, { name: 'BIOSECURE Act', icon: Icons.Shield, link: '#' }], digital: [{ name: 'AI/ML for Green Chemistry', icon: Icons.Brain, link: '#' }, { name: 'Semantic Knowledge Graphs', icon: Icons.Link, link: '#' }] },
+                resourceExtraction: { regulatory: [{ name: 'Local Environmental Regs (Air, Water)', icon: Icons.Shield }, {name: 'Methane Regulations', icon: Icons.Cloud, link: '#'}], digital: [{ name: 'Satellite Monitoring (Methane, Deforestation)', icon: Icons.Globe2, link: '#' }] },
+                commodityTrading: { regulatory: [{ name: 'Trade Regulations & Tariffs', icon: Icons.DollarSign, link: '#' }, {name: 'Maritime Pollution Regs (MARPOL)', icon: Icons.Ship, link: '#'}], digital: [{ name: 'Market Analytics Platforms', icon: Icons.Brain, link: '#' }] },
+                specializedProcessing: { regulatory: [{ name: 'Responsible Care Initiative', icon: Icons.ShieldCheck, link: '#' }], digital: [{ name: 'Digital Twins for Process Optimization', icon: Icons.Layers, link: '#' }] },
+                apiExcipientMfg: { regulatory: [{ name: 'EU CSDDD (Due Diligence)', icon: Icons.Scale, link: '#' }], digital: [{ name: 'IoT-Enabled Laboratory', icon: Icons.Wifi, link: '#' }] },
+                drugProductMfg: { regulatory: [{ name: 'EU PPWR (Packaging Waste)', icon: Icons.Recycle, link: '#' }], digital: [{ name: 'Digital Twin in Pharma', icon: Icons.Layers, link: '#' }] },
+                distribution: { regulatory: [{ name: 'DSCSA (Track & Trace)', icon: Icons.Shield, link: '#' }], digital: [{ name: 'Real-time Tracking', icon: Icons.Globe2, link: '#' }] },
+            };
+            
+            const comminglingData = {
+                commodityTrading: { prevalence: 'high', details: [{ icon: Icons.Globe2, text: 'Global Exchanges: Raw materials (crude oil, palm oil) traded as bulk commodities, losing origin identity.' }, { icon: Icons.Blend, text: 'Aggregation: Materials from numerous small producers or oil fields are combined.' }, { icon: Icons.XCircle, text: 'Traceability Lost: Tracing to a specific site becomes nearly impossible.' }] },
+                specializedProcessing: { prevalence: 'medium', details: [{ icon: Icons.Blend, text: 'Derivatives from various bulk sources (e.g. different crude oil grades) are blended to meet industrial specifications.' }] },
+                apiExcipientMfg: { prevalence: 'medium', details: [{ icon: Icons.Link, text: 'Precursor chemicals are sourced from diverse, sometimes commingled, global suppliers.' }] },
+            };
+
+            const sustainabilityData = {
+                rd: { goal: "Ensure Ethical Innovation and Mitigate Upstream Risk", ventureModel: "Develop a best-in-class ethical bioprospecting and benefit-sharing framework compliant with the Nagoya Protocol, ensuring equitable use of genetic resources. Simultaneously, fund R&D for bio-based alternatives to petrochemical solvents and feedstocks.", wwfValue: "WWF can act as policy partners for bioprospecting and also connect the company with innovators in the green chemistry space to accelerate the transition away from fossil-fuel-based inputs.", businessDrivers: "Mitigates legal/reputational risks of biopiracy, enhances brand value, and reduces long-term dependency on volatile petrochemical markets.", realWorldExample: "Pharma collaborations with academic institutions on green chemistry R&D and benefit-sharing agreements." },
+                resourceExtraction: { goal: "De-risk commodity supply & meet climate targets.", ventureModel: "For bio-based materials, develop 'insetting' projects with farming co-ops. For petrochemicals, invest in high-quality carbon capture or methane abatement projects that are directly linked to the fossil fuel value chain, beyond simple offsetting.", wwfValue: "WWF acts as a science-based partner for both agricultural projects and for verifying the integrity and additionality of carbon reduction projects in the fossil fuel sector, ensuring they are not 'greenwashing'.", businessDrivers: "Secures stable raw material supply. Provides a credible pathway to address Scope 3 emissions from petrochemicals. Creates an authentic ESG narrative.", realWorldExample: "Unilever's sustainable agriculture programs; Oil and Gas Climate Initiative (OGCI) investments in CCUS." },
+                specializedProcessing: { goal: "Drive Decarbonization & Efficiency in Chemical Production", ventureModel: "Co-invest with a key chemical supplier in a project to electrify a steam cracker or adopt a new, less energy-intensive catalytic process. The venture is structured around shared energy savings and reduced carbon tax liability.", wwfValue: "WWF can serve as a technical advisor and convener, bringing together chemical producers, technology providers, and policymakers to scale innovative, low-carbon chemical manufacturing technologies and standards.", businessDrivers: "Directly reduces the massive 'embodied carbon' in pharmaceutical ingredients. Mitigates risks from rising carbon prices. Drives innovation and long-term cost savings in a key supplier relationship.", realWorldExample: "The 'Cracker of the Future' consortium in Europe, where chemical companies collaborate on decarbonizing petrochemical production." },
+                apiExcipientMfg: { goal: "Reduce operational costs & mitigate water risk.", ventureModel: "Partner to implement advanced water recycling and efficiency technologies at a key supplier in a water-stressed region (e.g., India, China). The venture is profitable through shared savings from reduced water purchasing and wastewater treatment costs.", wwfValue: "WWF acts as a water stewardship strategist, using its Water Risk Filter tool for contextual risk analysis and convening stakeholders in a water basin. They can serve as a trusted intermediary to facilitate the shared savings model between the company and its supplier.", businessDrivers: "Mitigates supply chain disruption from water scarcity at critical facilities. Provides a direct ROI through shared savings. Proactively manages API discharge risks, a major reputational and regulatory concern.", realWorldExample: "The CEO Water Mandate initiative showcases corporate partnerships to address shared water challenges in high-risk basins." },
+                drugProductMfg: { goal: "Create circular revenue streams & reduce packaging costs.", ventureModel: "Launch a multi-company coalition (with an NGO as a neutral convener) to fund and scale advanced recycling for medical-grade plastics (e.g., blister packs). This creates a new, reliable source of recycled feedstock, reducing reliance on volatile virgin plastic prices.", wwfValue: "WWF serves as the neutral convener and policy advocate for the coalition. They provide a 'pre-competitive space,' connect the group with recycling innovators, and advocate for supportive policies that create a favorable market for recycled medical plastics.", businessDrivers: "Reduces reliance on volatile virgin plastic prices for long-term cost control. Ensures proactive compliance with emerging packaging regulations (e.g., EU PPWR). Demonstrates industry leadership.", realWorldExample: "The Healthcare Plastics Recycling Council (HPRC) is a pre-competitive collaboration working on this exact challenge." },
+                endoflife: { goal: "Enhance brand reputation & explore waste-to-value.", ventureModel: "Co-sponsor a national take-back program and invest in R&D for innovative disposal technologies (e.g., plasma gasification) that can safely destroy APIs while generating energy. This turns a brand risk and disposal cost into a managed process and a potential energy source.", wwfValue: "WWF acts as the authoritative science communicator and public awareness partner. They can translate and disseminate research on the ecological impacts of Pharmaceuticals in the Environment (PiE) and leverage their trusted brand to lead public education campaigns on proper drug disposal.", businessDrivers: "Mitigates significant brand risk associated with environmental drug pollution. Allows the company to proactively shape the narrative on a difficult issue, turning a liability into a demonstration of corporate responsibility.", realWorldExample: "DEA National Prescription Drug Take Back Day events demonstrate the public demand and logistical framework for such programs." }
+            };
+
+            const horizonTrendsData = {
+                apiExcipientMfg: { trend: 'Onshoring/Reshoring of Critical Mfg.', impact: 'US Gov initiatives (e.g., BARDA) aim to reduce foreign dependence for critical medicines and APIs.', icon: Icons.Factory, link: '#' },
+                drugProductMfg: { trend: 'Advanced Mfg. (Continuous)', impact: 'FDA encouragement for technologies that can make manufacturing more flexible, efficient, and resilient.', icon: Icons.Layers, link: '#' },
+                rd: { trend: 'Rise of Biomanufacturing & CGT', impact: 'Shift to large-molecule drugs and cell/gene therapies creates entirely new, complex supply chains.', icon: Icons.Dna, link: '#' },
+                distribution: { trend: 'Supply Chain Digitalization & AI', impact: 'Use of AI and digital twins to model risks, predict disruptions, and optimize inventory.', icon: Icons.Brain, link: '#' },
+            };
+            
+            const allFlowsData = {
+                palm: {
+                    displayName: 'Bio-based (Palm Oil)',
+                    color: 'text-green-800',
+                    data: {
+                        resourceExtraction: { companies: ['Eagle High Plantations Tbk Pt'], flow: 'Oil Palm Cultivation → Crude Palm Oil (CPO)', description: 'Cultivation of oil palm and primary processing into CPO.' },
+                        commodityTrading: { companies: ['Global Commodity Traders'], flow: 'Aggregated CPO/PKO', description: 'CPO from various plantations is traded and aggregated on global markets, losing origin identity.' },
+                        specializedProcessing: { companies: ['Sinar Mas Agro, BASF, Croda'], flow: 'CPO/PKO → Basic Oleochemicals', description: 'Large chemical manufacturers refine CPO into basic oleochemicals like fatty acids and glycerine.' },
+                        apiExcipientMfg: { companies: ['BASF, Croda, Evonik'], flow: 'Basic Oleochemicals → Pharma-grade Excipients', description: 'Specialized divisions purify oleochemicals into high-purity, GMP-compliant excipients like Magnesium Stearate.' },
+                        drugProductMfg: { companies: ['Pfizer, J&J, etc.'], flow: 'Excipients + APIs → Finished Drug Product', description: 'Pharma companies formulate final drug products using these specialized excipients.' }
+                    }
+                },
+                petro: {
+                    displayName: 'Petrochemical (Propylene Glycol)',
+                    color: 'text-gray-800',
+                    data: {
+                        resourceExtraction: { companies: ['ExxonMobil, Saudi Aramco'], flow: 'Crude Oil Extraction', description: 'Extraction of crude oil from terrestrial or offshore reserves.'},
+                        commodityTrading: { companies: ['Vitol, Glencore'], flow: 'Aggregated Crude Oil', description: 'Crude oil is traded on global markets as standardized benchmarks, obscuring the specific oil field of origin.'},
+                        specializedProcessing: { companies: ['Dow, LyondellBasell'], flow: 'Crude Oil → Propylene Oxide', description: 'Crude oil is refined and \'cracked\' into propylene, then oxidized to create propylene oxide, a key intermediate.'},
+                        apiExcipientMfg: { companies: ['BASF, Dow'], flow: 'Propylene Oxide → Propylene Glycol (USP)', description: 'Propylene oxide is hydrolyzed and heavily purified to meet stringent USP standards for use as a solvent.'},
+                        drugProductMfg: { companies: ['Pfizer, Roche, etc.'], flow: 'Propylene Glycol + APIs → Finished Drug', description: 'USP-grade propylene glycol is used as a key solvent in many oral, topical, and injectable formulations.'}
+                    }
+                },
+                lactose: {
+                    displayName: 'Dairy-derived (Lactose)',
+                    color: 'text-blue-800',
+                    data: {
+                        resourceExtraction: { companies: ['Dairy Farmers of America, Fonterra'], flow: 'Dairy Farming → Raw Milk', description: 'Collection of raw milk from numerous dairy farms, a byproduct of the larger food industry.'},
+                        commodityTrading: { companies: ['Hoogwegt Group, Interfood'], flow: 'Whey Processing → Crude Lactose', description: 'Milk is processed for cheese, leaving whey, which is concentrated to crystallize out crude lactose.'},
+                        specializedProcessing: { companies: ['Kerry Group, FrieslandCampina'], flow: 'Crude Lactose → Refined Lactose', description: 'Crude lactose is re-dissolved, filtered, and re-crystallized multiple times to remove impurities.'},
+                        apiExcipientMfg: { companies: ['DFE Pharma, Meggle'], flow: 'Refined Lactose → Milled Pharma-Grade Lactose', description: 'Highly pure lactose is milled to specific particle sizes for tablets and inhalers.'},
+                        drugProductMfg: { companies: ['All major pharma'], flow: 'Lactose + APIs → Finished Tablets', description: 'Pharma-grade lactose is one of the most common excipients, used as a filler or binder.'}
+                    }
+                },
+                cellulose: {
+                    displayName: 'Plant-derived (Cellulose)',
+                    color: 'text-emerald-800',
+                    data: {
+                        resourceExtraction: { companies: ['Weyerhaeuser, Suzano'], flow: 'Sustainable Forestry → Wood Pulp', description: 'Harvesting of trees from managed forests and processing into wood pulp.'},
+                        commodityTrading: { companies: ['Ekman & Co, CellMark'], flow: 'Pulp Trading & Aggregation', description: 'Wood pulp is traded as a global commodity, often blended from various forestry sources.'},
+                        specializedProcessing: { companies: ['DuPont, Ashland'], flow: 'Wood Pulp → Microcrystalline Cellulose (MCC)', description: 'Purified pulp undergoes acid hydrolysis to remove amorphous regions, leaving crystalline micro-fibrils (MCC).'},
+                        apiExcipientMfg: { companies: ['FMC Corp, JRS Pharma'], flow: 'MCC → Pharma-Grade MCC Powder', description: 'The MCC is dried, milled, and tested to meet pharmacopeia standards for use as a binder.'},
+                        drugProductMfg: { companies: ['Most pharma companies'], flow: 'MCC + APIs → Finished Tablets', description: 'MCC is a critical excipient used to form hard tablets that dissolve correctly in the body.'}
+                    }
+                },
+                starch: {
+                    displayName: 'Plant-derived (Starch)',
+                    color: 'text-amber-800',
+                    data: {
+                        resourceExtraction: { companies: ['Local Farms'], flow: 'Corn/Potato/Tapioca Farming → Harvest', description: 'Cultivation and harvesting of starchy crops like corn, a major agricultural commodity.'},
+                        commodityTrading: { companies: ['Cargill, ADM'], flow: 'Wet Milling → Crude Starch Slurry', description: 'Crops are processed via wet milling to separate the starch from protein, fiber, and germ.'},
+                        specializedProcessing: { companies: ['Ingredion, Roquette'], flow: 'Crude Starch → Modified/Purified Starch', description: 'The starch slurry is purified and can be chemically or physically modified to alter its properties.'},
+                        apiExcipientMfg: { companies: ['Colorcon, Grain Processing Corp'], flow: 'Purified Starch → Pharma-Grade Starch', description: 'The starch is dried, milled, and certified to meet pharmaceutical standards for use as a disintegrant.'},
+                        drugProductMfg: { companies: ['Many pharma companies'], flow: 'Starch + APIs → Finished Drug Product', description: 'Starch helps tablets to swell and break apart when they come into contact with fluids in the stomach.'}
+                    }
+                },
+                soy: {
+                    displayName: 'Soy-derived (Lecithin)',
+                    color: 'text-lime-800',
+                    data: {
+                        resourceExtraction: { companies: ['Local Farms'], flow: 'Soybean Farming → Harvest', description: 'Cultivation and harvesting of soybeans, a globally significant crop.'},
+                        commodityTrading: { companies: ['Bunge, Louis Dreyfus'], flow: 'Soybean Crushing → Crude Soy Oil', description: 'Soybeans are crushed to separate the oil from the solid meal, a primary processing step.'},
+                        specializedProcessing: { companies: ['Cargill, ADM'], flow: 'Crude Oil Degumming → Crude Lecithin', description: 'Water is added to the crude soy oil, which precipitates the lecithin phospholipid mixture.'},
+                        apiExcipientMfg: { companies: ['Lipoid GmbH, Avanti Polar Lipids'], flow: 'Crude Lecithin → High-Purity Phospholipids', description: 'Crude lecithin is chromatographically purified to isolate specific phospholipids for advanced drug delivery.'},
+                        drugProductMfg: { companies: ['Moderna, Pfizer/BioNTech'], flow: 'Phospholipids + mRNA → Lipid Nanoparticles', description: 'Highly purified phospholipids are essential for LNPs used to deliver mRNA vaccines.'}
+                    }
+                },
+                minerals: {
+                    displayName: 'Mineral-derived (Talc)',
+                    color: 'text-slate-800',
+                    data: {
+                        resourceExtraction: { companies: ['Imerys, Mondo Minerals'], flow: 'Talc Mining → Ore Extraction', description: 'Extraction of raw talc ore from open-pit mines.'},
+                        commodityTrading: { companies: ['Specialty Mineral Traders'], flow: 'Ore Sorting & Crushing', description: 'The raw ore is sorted by brightness and purity and then crushed into smaller pieces.'},
+                        specializedProcessing: { companies: ['Imerys Talc, Specialty Minerals Inc.'], flow: 'Crushed Ore → Milled & Purified Talc', description: 'The crushed talc is finely milled and purified to remove mineral impurities, including asbestos fibers.'},
+                        apiExcipientMfg: { companies: ['Supplier divisions of above'], flow: 'Purified Talc → Pharma-Grade Talc', description: 'The purified talc undergoes rigorous testing to certify it is asbestos-free and meets pharmacopeia standards.'},
+                        drugProductMfg: { companies: ['Many pharma companies'], flow: 'Talc + APIs → Finished Drug Product', description: 'Pharma-grade talc is used as a glidant to help powders flow smoothly during tablet manufacturing.'}
+                    }
+                }
+            };
+            
+            const marketAccessData = {
+                rd: {
+                    title: "Executive View: R&D Implications",
+                    points: [
+                        { icon: Icons.DollarSign, text: "PBMs and GPOs signal market viability. A crowded therapeutic area with heavy rebating may deprioritize an otherwise promising R&D project." },
+                        { icon: Icons.Target, text: "Development focuses on drugs with clear, demonstrable value to justify a premium price and secure formulary access, influencing clinical trial design." }
+                    ]
+                },
+                drugProductMfg: {
+                    title: "Executive View: Manufacturing & Profitability",
+                    points: [
+                        { icon: Icons.Percent, text: "PBM rebate negotiations directly impact the net price of the drug, forcing manufacturers to factor these discounts into profitability forecasts." },
+                        { icon: Icons.Gate, text: "GPO contracts for hospitals and PBM formulary placement for insurers determine large-scale production volumes. Losing a contract can idle a production line." }
+                    ]
+                },
+                distribution: {
+                    title: "Executive View: Channel Control",
+                    points: [
+                        { icon: Icons.Truck, text: "GPOs consolidate purchasing power, making them a critical, high-volume channel to the hospital market that must be managed." },
+                        { icon: Icons.Building2, text: "Major PBMs (like Express Scripts, CVS Caremark) own their own mail-order and specialty pharmacies, giving them immense control over the distribution channel for high-cost drugs." }
+                    ]
+                },
+                endoflife: {
+                    title: "Executive View: Patient Access & Gatekeeping",
+                    points: [
+                        { icon: Icons.Gate, text: "PBMs act as gatekeepers. Their formulary decisions (e.g., preferred vs. non-preferred, prior authorization) directly control patient access to medication." },
+                        { icon: Icons.Users, text: "GPOs determine which drugs are on a hospital's formulary, dictating what physicians can prescribe in the inpatient setting." }
+                    ]
+                }
+            };
+            
+            const delineationData = {
+                solvent: {
+                    label: 'Solvent Recovery',
+                    from: 'apiExcipientMfg',
+                    to: 'specializedProcessing',
+                    color: '#F59E0B',
+                    bend: -40,
+                    description: 'Used petrochemical solvents from API manufacturing are not discarded but sent back to specialized chemical processors for re-distillation and purification. This creates a circular economy for high-value materials.',
+                    executiveView: 'A direct COGS reduction strategy. Reduces hazardous waste disposal costs and lowers raw material purchasing costs. A key operational efficiency metric.'
+                },
+                integration: {
+                    label: 'Vertical Integration',
+                    from: 'drugProductMfg',
+                    to: 'apiExcipientMfg',
+                    color: '#6366F1',
+                    bend: 40,
+                    description: 'Many large pharma companies own their own API manufacturing facilities for their most critical products. This represents a direct backward integration into an earlier stage of the supply chain, bypassing external suppliers.',
+                    executiveView: 'A strategic decision to secure supply, protect intellectual property, and control quality for blockbuster drugs, at the cost of higher capital expenditure and fixed costs.'
+                },
+                packaging: {
+                    label: 'Packaging Recycling',
+                    from: 'endoflife',
+                    to: 'drugProductMfg',
+                    color: '#34D399',
+                    bend: 60,
+                    description: 'Consumer and hospital packaging waste (plastics, paperboard) is collected and reprocessed. This creates a source of recycled feedstock that can be used for secondary packaging, reducing reliance on virgin materials.',
+                    executiveView: 'Primarily an ESG and brand reputation initiative. Can offer minor cost savings but is more important for meeting sustainability goals and complying with regulations like the EU PPWR.'
+                }
+            };
+
+            useEffect(() => {
+                const calculatePath = () => {
+                    if (!delineationModeActive || !activeDelineation) {
+                        setDelineationPath(null);
+                        return;
+                    }
+
+                    const link = delineationData[activeDelineation];
+                    if (!link) return;
+
+                    const fromNodeIndex = stages.findIndex(s => s.id === link.from);
+                    const toNodeIndex = stages.findIndex(s => s.id === link.to);
+
+                    const fromEl = stageRefs.current[fromNodeIndex];
+                    const toEl = stageRefs.current[toNodeIndex];
+
+                    if (!fromEl || !toEl) return;
+
+                    const containerRect = fromEl.closest('.grid').getBoundingClientRect();
+                    const fromRect = fromEl.getBoundingClientRect();
+                    const toRect = toEl.getBoundingClientRect();
+                    
+                    const startX = fromRect.left - containerRect.left + fromRect.width / 2;
+                    const startY = fromRect.top - containerRect.top + fromRect.height / 2;
+                    const endX = toRect.left - containerRect.left + toRect.width / 2;
+                    const endY = toRect.top - containerRect.top + toRect.height / 2;
+
+                    const dx = endX - startX;
+                    const dy = endY - startY;
+                    const path = `M ${startX},${startY} C ${startX + dx / 2},${startY - link.bend} ${endX - dx / 2},${endY - link.bend} ${endX},${endY}`;
+                    
+                    setDelineationPath({ ...link, path });
+                };
+
+                calculatePath();
+                window.addEventListener('resize', calculatePath);
+                return () => window.removeEventListener('resize', calculatePath);
+            }, [delineationModeActive, activeDelineation]);
+
+
+            // --- HELPER FUNCTIONS ---
+            const getHotspotColorClass = (hotspot) => ({ 'red': 'bg-red-50 border-red-300', 'orange': 'bg-orange-50 border-orange-300', 'yellow': 'bg-yellow-50 border-yellow-300', 'low': 'bg-green-50 border-green-300' }[hotspot] || 'bg-white border-gray-200');
+            const getComminglingClass = (prevalence) => ({ 'high': 'border-blue-400 border-dashed', 'medium': 'border-blue-300 border-dashed' }[prevalence] || '');
+            const getExampleFlowHighlightClass = (stageId) => {
+                const relevantStages = ['resourceExtraction', 'commodityTrading', 'specializedProcessing', 'apiExcipientMfg', 'drugProductMfg'];
+                return activeFlow !== 'none' && relevantStages.includes(stageId) ? 'border-orange-600 ring-2 ring-orange-300' : '';
+            };
+            const renderLink = (link) => (<a href={link} target="_blank" rel="noopener noreferrer" className="inline-block ml-1 text-blue-500 hover:text-blue-700">{Icons.ExternalLink}</a>);
+
+            // --- RENDER ---
+            return (
+                <div className="min-h-screen p-4 sm:p-6 lg:p-8 text-gray-800">
+                    {activeSublayer && <SublayerModal onClose={() => setActiveSublayer(null)} {...sublayerData[activeSublayer]} />}
+                    {activeOverlap && <OverlapModal onClose={() => setActiveOverlap(null)} data={overlapData[activeOverlap]} />}
+                    {activeSustainability && <SustainabilityModal onClose={() => setActiveSustainability(null)} data={sustainabilityData[activeSustainability]} />}
+                    
+                    <div className="max-w-screen-xl mx-auto">
+                        <h1 className="text-3xl md:text-4xl font-bold text-center text-gray-800 mb-2">Pharmaceutical Manufacturing Supply Chain</h1>
+                        <p className="text-center text-gray-600 mb-8 max-w-4xl mx-auto">Mapping the tiers of the pharma supply chain, from R&D to End-of-Life, and uncovering knowledge gaps and overlooked dependencies.</p>
+                        
+                        <div className="flex flex-wrap justify-center items-center gap-3 mb-10 p-4 bg-white rounded-lg shadow-md">
+                            <button onClick={() => setShowEnvironmentalLayer(!showEnvironmentalLayer)} className={`flex items-center px-4 py-2 rounded-full font-semibold transition-all duration-300 text-sm ${showEnvironmentalLayer ? 'bg-green-600 text-white shadow' : 'bg-green-100 text-green-800 hover:bg-green-200'}`}><span className="mr-2">{Icons.Leaf}</span> Environmental</button>
+                            <button onClick={() => setShowStructureLayer(!showStructureLayer)} className={`flex items-center px-4 py-2 rounded-full font-semibold transition-all duration-300 text-sm ${showStructureLayer ? 'bg-purple-600 text-white shadow' : 'bg-purple-100 text-purple-800 hover:bg-purple-200'}`}><span className="mr-2">{Icons.Layers}</span> Structure</button>
+                            <button onClick={() => setShowMarketAccessLayer(!showMarketAccessLayer)} className={`flex items-center px-4 py-2 rounded-full font-semibold transition-all duration-300 text-sm ${showMarketAccessLayer ? 'bg-cyan-600 text-white shadow' : 'bg-cyan-100 text-cyan-800 hover:bg-cyan-200'}`}><span className="mr-2">{Icons.DollarSign}</span> Market Access</button>
+                            <button onClick={() => setDelineationModeActive(true)} className={`flex items-center px-4 py-2 rounded-full font-semibold transition-all duration-300 text-sm bg-rose-100 text-rose-800 hover:bg-rose-200`}><span className="mr-2">{Icons.GitFork}</span> Delineation</button>
+                            <button onClick={() => setShowRegulatoryDigitalLayer(!showRegulatoryDigitalLayer)} className={`flex items-center px-4 py-2 rounded-full font-semibold transition-all duration-300 text-sm ${showRegulatoryDigitalLayer ? 'bg-blue-600 text-white shadow' : 'bg-blue-100 text-blue-800 hover:bg-blue-200'}`}><span className="mr-2">{Icons.Workflow}</span> Regulatory & Digital</button>
+                            <button onClick={() => setShowComminglingLayer(!showComminglingLayer)} className={`flex items-center px-4 py-2 rounded-full font-semibold transition-all duration-300 text-sm ${showComminglingLayer ? 'bg-indigo-600 text-white shadow' : 'bg-indigo-100 text-indigo-800 hover:bg-indigo-200'}`}><span className="mr-2">{Icons.Blend}</span> Commingling</button>
+                            <button onClick={() => setShowSustainabilityLayer(!showSustainabilityLayer)} className={`flex items-center px-4 py-2 rounded-full font-semibold transition-all duration-300 text-sm ${showSustainabilityLayer ? 'bg-teal-600 text-white shadow' : 'bg-teal-100 text-teal-800 hover:bg-teal-200'}`}><span className="mr-2">{Icons.Handshake}</span> Engagement</button>
+                            <button onClick={() => setShowHorizonLayer(!showHorizonLayer)} className={`flex items-center px-4 py-2 rounded-full font-semibold transition-all duration-300 text-sm ${showHorizonLayer ? 'bg-gray-700 text-white shadow' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'}`}><span className="mr-2">{Icons.Telescope}</span> Trends</button>
+                            <button onClick={() => setShowOverlaps(!showOverlaps)} className={`flex items-center px-4 py-2 rounded-full font-semibold transition-all duration-300 text-sm ${showOverlaps ? 'bg-red-600 text-white shadow' : 'bg-red-100 text-red-800 hover:bg-red-200'}`}><span className="mr-2">{Icons.Info}</span> Overlaps</button>
+                            
+                            <div className="relative">
+                                <select 
+                                    value={activeFlow} 
+                                    onChange={(e) => setActiveFlow(e.target.value)}
+                                    className="appearance-none flex items-center px-4 py-2 rounded-full font-semibold transition-all duration-300 text-sm bg-orange-100 text-orange-800 hover:bg-orange-200 focus:outline-none focus:ring-2 focus:ring-orange-400"
+                                >
+                                    <option value="none">Select Example Flow</option>
+                                    {Object.entries(allFlowsData).map(([key, { displayName }]) => (
+                                        <option key={key} value={key}>{displayName}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div className="relative">
+                            {delineationModeActive && (
+                                <DelineationControlPanel 
+                                    data={delineationData}
+                                    activeDelineation={activeDelineation}
+                                    setActiveDelineation={setActiveDelineation}
+                                    onClose={() => setDelineationModeActive(false)}
+                                />
+                            )}
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-12">
+                                {delineationModeActive && delineationPath && (
+                                    <svg className="absolute top-0 left-0 w-full h-full pointer-events-none z-10" style={{ overflow: 'visible' }}>
+                                        <defs>
+                                            <marker id={`arrow-${delineationPath.color}`} viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                                                <path d="M 0 0 L 10 5 L 0 10 z" fill={delineationPath.color} />
+                                            </marker>
+                                        </defs>
+                                        <path d={delineationPath.path} stroke={delineationPath.color} strokeWidth="2.5" fill="none" markerEnd={`url(#arrow-${delineationPath.color})`} style={{ filter: 'drop-shadow(0px 1px 1px rgba(0,0,0,0.3))' }} />
+                                    </svg>
+                                )}
+
+                                {stages.map((stage, index) => {
+                                    const flowData = activeFlow !== 'none' && allFlowsData[activeFlow].data[stage.id];
+                                    const flowColor = activeFlow !== 'none' ? allFlowsData[activeFlow].color : '';
+                                    const isDimmed = delineationModeActive && activeDelineation && ![delineationData[activeDelineation].from, delineationData[activeDelineation].to].includes(stage.id);
+
+                                    return (
+                                    <div className="relative" key={stage.id} ref={el => stageRefs.current[index] = el}>
+                                        <div className={`flex flex-col p-6 rounded-xl border-2 shadow-lg min-h-[320px] h-full transition-all duration-500
+                                            ${isDimmed ? 'opacity-30' : 'opacity-100'}
+                                            ${getExampleFlowHighlightClass(stage.id)} 
+                                            ${showEnvironmentalLayer && !getExampleFlowHighlightClass(stage.id) ? getHotspotColorClass(environmentalData[stage.id]?.hotspot) : ''} 
+                                            ${!showEnvironmentalLayer && !getExampleFlowHighlightClass(stage.id) ? 'bg-white border-gray-200' : ''}
+                                            ${showComminglingLayer ? getComminglingClass(comminglingData[stage.id]?.prevalence) : ''} 
+                                            ${showSustainabilityLayer && sustainabilityData[stage.id] ? 'border-teal-400' : ''} 
+                                            ${showMarketAccessLayer && marketAccessData[stage.id] ? 'border-cyan-400' : ''}
+                                            ${showHorizonLayer && horizonTrendsData[stage.id] ? 'border-gray-500' : ''}
+                                        `}>
+                                            <div className="flex items-center text-gray-700 mb-4">
+                                                <span className="text-4xl">{stage.icon}</span>
+                                                <h3 className="ml-3 text-md font-bold leading-tight">{stage.name}</h3>
+                                            </div>
+                                            <div className="text-sm mb-4">
+                                                <p className="font-semibold mb-1">Key Actors:</p>
+                                                <ul className="list-disc list-inside text-gray-600">{stage.actors.map(actor => <li key={actor}>{actor}</li>)}</ul>
+                                            </div>
+                                            {sublayerData[stage.id] && (<div className="mt-auto mb-2"><button onClick={() => setActiveSublayer(stage.id)} className="w-full text-center bg-indigo-100 text-indigo-700 hover:bg-indigo-200 font-semibold py-2 px-4 rounded-lg text-xs transition-colors">Explore Sub-Flow</button></div>)}
+                                            <div className="space-y-3 flex-grow mt-auto pt-4 border-t border-gray-200">
+                                                
+                                                {flowData && (
+                                                    <div className="space-y-1">
+                                                        <p className={`font-bold text-xs ${flowColor}`}>{allFlowsData[activeFlow].displayName}:</p>
+                                                        <p className="text-xs text-gray-700"><span className="font-semibold">Companies:</span> {flowData.companies}</p>
+                                                        <p className="text-xs text-gray-700"><span className="font-semibold">Flow:</span> {flowData.flow}</p>
+                                                        <p className="text-xs text-gray-600 mt-1">{flowData.description}</p>
+                                                    </div>
+                                                )}
+
+                                                {showEnvironmentalLayer && environmentalData[stage.id] && (<div><p className="font-bold text-xs mb-1 text-green-800">Environmental Risk Assessment:</p><div className="space-y-2"><div><p className="font-semibold text-xs text-gray-600">1. Hazard Identification:</p><ul className="space-y-1 pl-2">{environmentalData[stage.id].hazardIdentification?.map((item, idx) => <li key={idx} className="flex items-start text-xs text-gray-700"><span className="w-4 h-4 mr-1.5 mt-0.5 shrink-0">{item.icon}</span><span>{item.name}</span></li>)}</ul></div><div><p className="font-semibold text-xs text-gray-600">2. Exposure Assessment:</p><ul className="space-y-1 pl-2">{environmentalData[stage.id].exposureAssessment?.map((item, idx) => <li key={idx} className="flex items-start text-xs text-gray-700"><span className="w-4 h-4 mr-1.5 mt-0.5 shrink-0">{item.icon}</span><span>{item.name}</span></li>)}</ul></div><div><p className="font-semibold text-xs text-gray-600">3. Risk Characterization:</p><p className="text-xs text-gray-700">{environmentalData[stage.id].riskCharacterization}</p></div></div></div>)}
+                                                {showStructureLayer && (structureData[stage.id]?.gaps || structureData[stage.id]?.corporate) && (<div><p className="font-bold text-xs mb-1 text-purple-800">Structural Notes:</p><ul className="space-y-1">{structureData[stage.id]?.corporate?.map((item, idx) => <li key={idx} className="flex items-start text-xs text-gray-700"><span className="w-4 h-4 mr-1.5 mt-0.5 shrink-0">{item.icon}</span><span>{item.text || item.name} {item.link && renderLink(item.link)}</span></li>)}{structureData[stage.id]?.gaps?.map((item, idx) => <li key={idx} className="flex items-start text-xs text-gray-700"><span className="w-4 h-4 mr-1.5 mt-0.5 shrink-0">{item.icon}</span><span>{item.text || item.name} {item.link && renderLink(item.link)}</span></li>)}</ul></div>)}
+                                                {showMarketAccessLayer && marketAccessData[stage.id] && (<div><p className="font-bold text-xs mb-1 text-cyan-800">{marketAccessData[stage.id].title}:</p><ul className="space-y-1">{marketAccessData[stage.id].points.map((item, idx) => <li key={idx} className="flex items-start text-xs text-gray-700"><span className="w-4 h-4 mr-1.5 mt-0.5 shrink-0">{item.icon}</span><span>{item.text}</span></li>)}</ul></div>)}
+                                                {showRegulatoryDigitalLayer && regulatoryDigitalData[stage.id] && (<div>{regulatoryDigitalData[stage.id].regulatory?.length > 0 && <p className="font-bold text-xs mb-1 text-blue-800">Key Regulations:</p>}<ul className="space-y-1 mb-2">{regulatoryDigitalData[stage.id].regulatory?.map((item, idx) => <li key={idx} className="flex items-start text-xs text-gray-700"><span className="w-4 h-4 mr-1.5 mt-0.5 shrink-0">{item.icon}</span><span>{item.name}{renderLink(item.link)}</span></li>)}</ul>{regulatoryDigitalData[stage.id].digital?.length > 0 && <p className="font-bold text-xs mb-1 text-teal-800">Digital Enablers:</p>}<ul className="space-y-1">{regulatoryDigitalData[stage.id].digital?.map((item, idx) => <li key={idx} className="flex items-start text-xs text-gray-700"><span className="w-4 h-4 mr-1.5 mt-0.5 shrink-0">{item.icon}</span><span>{item.name}{item.link && renderLink(item.link)}</span></li>)}</ul></div>)}
+                                                {showComminglingLayer && comminglingData[stage.id] && (<div><p className="font-bold text-xs mb-1 text-indigo-800">Commingling:</p><ul className="space-y-1">{comminglingData[stage.id].details?.map((item, idx) => <li key={idx} className="flex items-start text-xs text-gray-700"><span className="w-4 h-4 mr-1.5 mt-0.s5 shrink-0">{item.icon}</span><span>{item.text}</span></li>)}</ul></div>)}
+                                                {showSustainabilityLayer && sustainabilityData[stage.id] && (<div><p className="font-bold text-xs mb-2 text-center text-teal-800">Sustainability Engagement</p><button onClick={() => setActiveSustainability(stage.id)} className="w-full bg-teal-100 text-teal-800 hover:bg-teal-200 font-semibold py-2 px-4 rounded-lg text-xs transition-colors">Explore Venture</button></div>)}
+                                                {showHorizonLayer && horizonTrendsData[stage.id] && (<div><p className="font-bold text-xs mb-1 text-gray-800">Horizon Trend:</p><div className="flex items-start text-xs text-gray-700 font-semibold mb-1"><span className="w-4 h-4 mr-1.5 mt-0.5 shrink-0">{horizonTrendsData[stage.id].icon}</span><span>{horizonTrendsData[stage.id].trend}</span></div><p className="text-xs text-gray-600">{horizonTrendsData[stage.id].impact} {horizonTrendsData[stage.id].link && renderLink(horizonTrendsData[stage.id].link)}</p></div>)}
+                                            </div>
+                                        </div>
+                                        {showOverlaps && index < stages.length - 1 && (index + 1) % 4 !== 0 && (
+                                            <div className="absolute left-full top-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-full z-20 hidden lg:flex items-center justify-center">
+                                                {overlapData[`${stage.id}-${stages[index + 1].id}`] ? (
+                                                    <button onClick={() => setActiveOverlap(`${stage.id}-${stages[index + 1].id}`)} className="w-10 h-10 bg-red-200 rounded-full flex items-center justify-center text-red-700 hover:bg-red-300 transition-all shadow-lg animate-pulse-red"><span className="text-2xl">{Icons.Info}</span></button>
+                                                ) : (
+                                                    <div className="w-8 h-8 text-gray-300 flex items-center justify-center text-4xl">{Icons.ArrowRightCircle}</div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                )})}
+                            </div>
+                        </div>
+                        
+                        <div className="mt-12 p-6 bg-white rounded-xl shadow-lg">
+                            <button onClick={() => setShowMethodology(!showMethodology)} className="w-full flex justify-between items-center text-left">
+                                <h3 className="text-xl font-semibold text-gray-700">Legend & Methodology</h3>
+                                <span className="text-2xl text-gray-500">{showMethodology ? Icons.ChevronUp : Icons.ChevronDown}</span>
+                            </button>
+                            {showMethodology && (
+                                <div className="mt-4 border-t pt-4">
+                                    <div className="mb-6">
+                                        <h4 className="font-bold text-md text-gray-800 mb-2">Environmental Risk Assessment Framework</h4>
+                                        <p className="text-sm text-gray-600 mb-2">The Environmental Exposure layer is structured according to a standard risk assessment framework. This provides a systematic way to evaluate potential adverse effects. The analysis is a qualitative simulation of the following steps:</p>
+                                        <ol className="list-decimal list-inside text-sm space-y-1 text-gray-700">
+                                            <li><strong>Hazard Identification:</strong> Identifies the chemical and nonchemical stressors.</li>
+                                            <li><strong>Exposure Assessment:</strong> Identifies pathways by which stressors may reach individuals and ecosystems.</li>
+                                            <li><strong>Risk Characterization:</strong> Combines information to form an overall conclusion about risk.</li>
+                                        </ol>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const container = document.getElementById('root');
+        const root = ReactDOM.createRoot(container);
+        root.render(<App />);
+    </script>
+</body>
+</html>
+
